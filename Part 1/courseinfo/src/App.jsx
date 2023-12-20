@@ -26,7 +26,7 @@ const Part = (props) => {
 }
 
 const Content = (props) => {
-console.log(props)
+console.log(props)  
   return (
     <div> 
       <Part partOne={props.parts[0].name} excerciseOne={props.parts[0].exercises} />
