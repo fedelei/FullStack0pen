@@ -1,85 +1,127 @@
-import { useState } from "react";
-import Filter from "./components/Filter";
+import { useEffect, useState } from "react";
 import Form from "./components/Form";
 import Persons from "./components/Persons";
-
+import Filter from "./components/Filter";
+import phonebookServices from "./services/phonebookServices";
+import Notification from "./components/Notification";
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "0406087123" },
-    { name: "Ada Lovelace", number: "39-44-5323523" },
-    { name: "Dan Abramov", number: "12-43-234345" },
-    { name: "Mary Poppendieck", number: "39-23-6423122" },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
-  const [number, setNumber] = useState("");
-  const [filter, setFilter] = useState("");
-  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [numbers, setNumbers] = useState("");
+  const [filtered, setFiltered] = useState("");
+  const [confirmMessage, setConfirmMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
  
 
-  const addPerson = (e) => {
-    e.preventDefault();
-    const isNameDuplicate = persons.some((person) => person.name === newName);
-    if (isNameDuplicate) {
-      alert(" The contact is already added to phonebook");
-    } else {
-      const newPersons = [
-        {
-          name: newName,
-          number: number,
-        },
-      ];
-      setPersons(persons.concat(newPersons));
+  useEffect(() => {
+    phonebookServices.getAll().then((res) => {
+      setPersons(res.data);
+    });
+  }, []);
 
-      setNewName("");
+  const onSubmit = (e) => {
+    e.preventDefault();
+    const existPerson = persons.find(
+      (p) => p.name.toLowerCase() === newName.toLowerCase()
+    );
+    if (existPerson) {
+      const confirmUpdate = window.confirm(
+        `${newName} is already added to phonebook. Do you want replace it?`
+      );
+
+      if (confirmUpdate) {
+        const updatedPerson = { ...existPerson, number: numbers };
+
+        phonebookServices.update(existPerson.id, updatedPerson).then((res) => {
+          setPersons(
+            persons.map((person) =>
+              person.id === existPerson.id ? res.data : person
+            )
+          );
+          setNewName("");
+          setNumbers("");
+          setConfirmMessage('It has been successfully updated')
+          setTimeout(()=> {
+            setConfirmMessage(null)
+          }, 5000)
+        }).catch(error => {
+          setErrorMessage('It has not been updated correctly')
+          setTimeout(()=> {
+            setErrorMessage(null)
+          }, 5000)
+        })
+      }
+    } else {
+      const newPersons = { name: newName, number: numbers };
+      phonebookServices.create(newPersons).then((res) => {
+        setPersons([...persons, res.data]);
+        setNewName("");
+        setNumbers("");
+        setConfirmMessage('The person was added successfully')
+        setTimeout(() => {
+          setConfirmMessage(null)
+        }, 5000)
+      }).catch((error) => {
+        setErrorMessage(`${error}.Could not add`)
+        setTimeout(()=> {
+          setErrorMessage(null)
+        }, 5000)
+      })
     }
-  };
+  }
 
   const handleChange = (e) => {
-    e.preventDefault();
     setNewName(e.target.value);
   };
 
   const handleChangeNumber = (e) => {
-    e.preventDefault();
-    setNumber(e.target.value);
+    setNumbers(e.target.value);
   };
 
   const handleFilterChange = (e) => {
-    e.preventDefault();
-    setFilter(e.target.value);
-  };
-  
-  const handlePersonClick = (person) => {
-    setSelectedPerson(person);
+    setFiltered(e.target.value);
   };
 
   const filteredPersons = persons.filter((person) =>
-    person.name.toLowerCase().includes(filter.toLowerCase())
+    person.name.toLowerCase().includes(filtered.toLowerCase())
   );
 
- 
-
+  const handleDelete = (id) => {
+    const deleted = persons.find((p) => p.id === id);
+    if (window.confirm(`Do you want delete ${deleted.name}?`)) {
+      phonebookServices.deleteId(id).then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
+        setConfirmMessage('Has been successfully removed')
+        console.log(confirmMessage);
+        setTimeout(()=> {
+          setConfirmMessage(null)
+        }, 5000)
+      }).catch((error) => {
+        setErrorMessage('UPS! Could not be deleted.')
+        setTimeout(() => {
+          setErrorMessage(null)
+        }, 5000)
+      })
+      
+  }
+}
   return (
     <div>
       <h2>Phonebook</h2>
-      <Filter filter={filter} handleFilterChange={handleFilterChange} />
+      <Notification confirm={confirmMessage} error={errorMessage} />
+      <Filter filtered={filtered} handleFilterChange={handleFilterChange} />
       <Form
-        addPerson={addPerson}
         newName={newName}
+        onSubmit={onSubmit}
         handleChange={handleChange}
-        number={number}
+        numbers={numbers}
         handleChangeNumber={handleChangeNumber}
       />
 
-      <Persons
-        persons={filteredPersons}
-        selectedPerson={selectedPerson}
-        handlePersonClick={handlePersonClick}
-       
-      />
+      <Persons filteredPersons={filteredPersons} handleDelete={handleDelete} />
     </div>
   );
-};
+}
 
 export default App;

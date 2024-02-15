@@ -1,18 +1,18 @@
 
+import React from "react";
 
-const Filter = ({ filter, handleFilterChange }) => {
-
+const Filter = ({ filtered, handleFilterChange }) => {
   return (
     <div>
       <label htmlFor="filter">Filter by name:</label>
       <input
         type="text"
         id="filter"
-        value={filter}
+        value={filtered}
         onChange={handleFilterChange}
       />
     </div>
   );
 };
 
-export default Filter
+export default Filter;
