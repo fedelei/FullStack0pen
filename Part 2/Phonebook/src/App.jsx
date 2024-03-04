@@ -90,7 +90,7 @@ const App = () => {
   const handleDelete = (id) => {
     const deleted = persons.find((p) => p.id === id);
     if (window.confirm(`Do you want delete ${deleted.name}?`)) {
-      phonebookServices.deleteId(id).then(() => {
+      phonebookServices.deleteId(id).then((res) => {
         setPersons(persons.filter((person) => person.id !== id));
         setConfirmMessage('Has been successfully removed')
         console.log(confirmMessage);
